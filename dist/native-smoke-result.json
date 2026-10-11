@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "checks": [
+    "native box + world bounds",
+    "collision + motion",
+    "independent nested copy",
+    "circle + drain aperture",
+    "parametric cabinet",
+    "scenes + visibility variants",
+    "five laundry models + fit + camera + dimension"
+  ],
+  "sketchup_version": "26.2.242",
+  "verified_at": "2026-10-11T16:54:24Z"
+}

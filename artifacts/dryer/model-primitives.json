@@ -1,0 +1,613 @@
+{
+  "materials": {
+    "yellow": [
+      254,
+      227,
+      0
+    ],
+    "ochre": [
+      137,
+      112,
+      9
+    ],
+    "glass": [
+      54,
+      58,
+      31
+    ],
+    "highlight": [
+      229,
+      219,
+      145
+    ],
+    "red": [
+      154,
+      10,
+      5
+    ]
+  },
+  "shapes": [
+    {
+      "type": "box",
+      "name": "Корпус — прямые углы",
+      "origin": [
+        0,
+        40,
+        25
+      ],
+      "size": [
+        600,
+        560,
+        805
+      ],
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Верхняя крышка",
+      "origin": [
+        0,
+        40,
+        832
+      ],
+      "size": [
+        600,
+        560,
+        18
+      ],
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Шов крышки",
+      "origin": [
+        0,
+        39,
+        830
+      ],
+      "size": [
+        600,
+        1,
+        2
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Ножка",
+      "origin": [
+        35,
+        70,
+        0
+      ],
+      "size": [
+        40,
+        40,
+        25
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Ножка",
+      "origin": [
+        35,
+        520,
+        0
+      ],
+      "size": [
+        40,
+        40,
+        25
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Ножка",
+      "origin": [
+        525,
+        70,
+        0
+      ],
+      "size": [
+        40,
+        40,
+        25
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Ножка",
+      "origin": [
+        525,
+        520,
+        0
+      ],
+      "size": [
+        40,
+        40,
+        25
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Панель управления",
+      "origin": [
+        10,
+        28,
+        720
+      ],
+      "size": [
+        580,
+        12,
+        100
+      ],
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Шов панели",
+      "origin": [
+        10,
+        27,
+        718
+      ],
+      "size": [
+        580,
+        1,
+        2
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Контур бака конденсата",
+      "origin": [
+        25,
+        26,
+        744
+      ],
+      "size": [
+        190,
+        2,
+        57
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Выдвижной бак конденсата",
+      "origin": [
+        28,
+        22,
+        747
+      ],
+      "size": [
+        184,
+        4,
+        51
+      ],
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Захват бака конденсата",
+      "origin": [
+        45,
+        21,
+        754
+      ],
+      "size": [
+        135,
+        1,
+        5
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Дисплей без мелких цифр",
+      "origin": [
+        372,
+        26,
+        755
+      ],
+      "size": [
+        139,
+        2,
+        44
+      ],
+      "material": "glass",
+      "group": "Machine"
+    },
+    {
+      "type": "cylinder",
+      "name": "Переключатель",
+      "center": [
+        290,
+        16,
+        775
+      ],
+      "radius": 28,
+      "depth": 12,
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Указатель переключателя",
+      "origin": [
+        288,
+        15,
+        785
+      ],
+      "size": [
+        4,
+        1,
+        14
+      ],
+      "material": "highlight",
+      "group": "Machine"
+    },
+    {
+      "type": "cylinder",
+      "name": "Кнопка",
+      "center": [
+        535,
+        24,
+        775
+      ],
+      "radius": 7,
+      "depth": 4,
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "cylinder",
+      "name": "Кнопка",
+      "center": [
+        557,
+        24,
+        775
+      ],
+      "radius": 7,
+      "depth": 4,
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "ring",
+      "name": "Уплотнитель большого люка",
+      "center": [
+        300,
+        28,
+        450
+      ],
+      "outer": 234,
+      "inner": 194,
+      "depth": 12,
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "ring",
+      "name": "Большой круглый люк — Ø460 мм",
+      "center": [
+        300,
+        0,
+        450
+      ],
+      "outer": 230,
+      "inner": 196,
+      "depth": 28,
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "cylinder",
+      "name": "Плоское стекло большого люка",
+      "center": [
+        300,
+        8,
+        450
+      ],
+      "radius": 194,
+      "depth": 4,
+      "material": "glass",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Прямая ручка большого люка",
+      "origin": [
+        506,
+        0,
+        417
+      ],
+      "size": [
+        22,
+        17,
+        66
+      ],
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Захват ручки",
+      "origin": [
+        508,
+        0,
+        431
+      ],
+      "size": [
+        3,
+        3,
+        38
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Шов нижней панели",
+      "origin": [
+        10,
+        39,
+        185
+      ],
+      "size": [
+        580,
+        1,
+        2
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Контур панели фильтра и теплообменника",
+      "origin": [
+        25,
+        38,
+        50
+      ],
+      "size": [
+        550,
+        2,
+        116
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Нижняя сервисная панель",
+      "origin": [
+        28,
+        35,
+        53
+      ],
+      "size": [
+        544,
+        3,
+        110
+      ],
+      "material": "yellow",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Захват нижней панели",
+      "origin": [
+        64,
+        34,
+        151
+      ],
+      "size": [
+        100,
+        1,
+        4
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Вентиляционная прорезь — условная",
+      "origin": [
+        320,
+        34,
+        72
+      ],
+      "size": [
+        215,
+        1,
+        3
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Вентиляционная прорезь — условная",
+      "origin": [
+        320,
+        34,
+        88
+      ],
+      "size": [
+        215,
+        1,
+        3
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Вентиляционная прорезь — условная",
+      "origin": [
+        320,
+        34,
+        104
+      ],
+      "size": [
+        215,
+        1,
+        3
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "box",
+      "name": "Вентиляционная прорезь — условная",
+      "origin": [
+        320,
+        34,
+        120
+      ],
+      "size": [
+        215,
+        1,
+        3
+      ],
+      "material": "ochre",
+      "group": "Machine"
+    },
+    {
+      "type": "rectangle",
+      "name": "Задняя граница — запас 100 мм",
+      "vertices": [
+        [
+          -20,
+          700,
+          0
+        ],
+        [
+          620,
+          700,
+          0
+        ],
+        [
+          620,
+          700,
+          850
+        ],
+        [
+          -20,
+          700,
+          850
+        ]
+      ],
+      "material": "red",
+      "group": "Clearances"
+    },
+    {
+      "type": "rectangle",
+      "name": "Левая граница — зазор 20 мм",
+      "vertices": [
+        [
+          -20,
+          0,
+          0
+        ],
+        [
+          -20,
+          600,
+          0
+        ],
+        [
+          -20,
+          600,
+          850
+        ],
+        [
+          -20,
+          0,
+          850
+        ]
+      ],
+      "material": "red",
+      "group": "Clearances"
+    },
+    {
+      "type": "rectangle",
+      "name": "Правая граница — зазор 20 мм",
+      "vertices": [
+        [
+          620,
+          0,
+          0
+        ],
+        [
+          620,
+          600,
+          0
+        ],
+        [
+          620,
+          600,
+          850
+        ],
+        [
+          620,
+          0,
+          850
+        ]
+      ],
+      "material": "red",
+      "group": "Clearances"
+    },
+    {
+      "type": "rectangle",
+      "name": "Зона доступа спереди 600 мм",
+      "vertices": [
+        [
+          -20,
+          -600,
+          0
+        ],
+        [
+          620,
+          -600,
+          0
+        ],
+        [
+          620,
+          0,
+          0
+        ],
+        [
+          -20,
+          0,
+          0
+        ]
+      ],
+      "material": "red",
+      "group": "Service"
+    }
+  ],
+  "body_bounds_mm": [
+    600,
+    600,
+    850
+  ],
+  "zone_opacity": 0.18
+}

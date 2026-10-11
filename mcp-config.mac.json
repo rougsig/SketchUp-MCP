@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sketchup": {
+      "command": "python3",
+      "args": ["/Users/st/projects/SketchUp-MCP/server/server.py"]
+    }
+  }
+}

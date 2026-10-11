@@ -1,0 +1,879 @@
+{
+  "materials": {
+    "yellow": [
+      254,
+      227,
+      0
+    ],
+    "ochre": [
+      137,
+      112,
+      9
+    ],
+    "glass": [
+      54,
+      58,
+      31
+    ],
+    "highlight": [
+      229,
+      219,
+      145
+    ],
+    "red": [
+      154,
+      10,
+      5
+    ]
+  },
+  "shapes": [
+    {
+      "type": "box",
+      "name": "Левая боковина",
+      "origin": [
+        -38,
+        0,
+        0
+      ],
+      "size": [
+        18,
+        720,
+        2600
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Правая боковина",
+      "origin": [
+        620,
+        0,
+        0
+      ],
+      "size": [
+        18,
+        720,
+        2600
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Нижняя панель основания",
+      "origin": [
+        -20,
+        0,
+        0
+      ],
+      "size": [
+        640,
+        720,
+        18
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Полка под стиральной машиной — верх 150 мм",
+      "origin": [
+        -20,
+        0,
+        132
+      ],
+      "size": [
+        640,
+        720,
+        18
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Полка второго отсека — верх 1038 мм",
+      "origin": [
+        -20,
+        0,
+        1020
+      ],
+      "size": [
+        640,
+        720,
+        18
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Дно верхнего шкафа",
+      "origin": [
+        -20,
+        0,
+        1908
+      ],
+      "size": [
+        640,
+        720,
+        18
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Задняя стенка верхнего шкафа",
+      "origin": [
+        -20,
+        702,
+        1926
+      ],
+      "size": [
+        640,
+        18,
+        656
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Верх корпуса — отметка 2600 мм",
+      "origin": [
+        -20,
+        0,
+        2582
+      ],
+      "size": [
+        640,
+        720,
+        18
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Задняя поперечина — открытый доступ к коммуникациям",
+      "origin": [
+        -20,
+        700,
+        18
+      ],
+      "size": [
+        640,
+        18,
+        50
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Задняя поперечина — открытый доступ к коммуникациям",
+      "origin": [
+        -20,
+        700,
+        990
+      ],
+      "size": [
+        640,
+        18,
+        50
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Задняя поперечина — открытый доступ к коммуникациям",
+      "origin": [
+        -20,
+        700,
+        1880
+      ],
+      "size": [
+        640,
+        18,
+        50
+      ],
+      "material": "yellow",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — фасад",
+      "origin": [
+        -17,
+        0,
+        21
+      ],
+      "size": [
+        634,
+        18,
+        108
+      ],
+      "material": "yellow",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — дно",
+      "origin": [
+        0,
+        20,
+        26
+      ],
+      "size": [
+        600,
+        620,
+        12
+      ],
+      "material": "yellow",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — стенка",
+      "origin": [
+        0,
+        20,
+        38
+      ],
+      "size": [
+        12,
+        620,
+        82
+      ],
+      "material": "yellow",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — стенка",
+      "origin": [
+        588,
+        20,
+        38
+      ],
+      "size": [
+        12,
+        620,
+        82
+      ],
+      "material": "yellow",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — задняя стенка",
+      "origin": [
+        12,
+        628,
+        38
+      ],
+      "size": [
+        576,
+        12,
+        82
+      ],
+      "material": "yellow",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — ручка",
+      "origin": [
+        215,
+        -12,
+        69.0
+      ],
+      "size": [
+        170,
+        12,
+        12
+      ],
+      "material": "ochre",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — шов фасада",
+      "origin": [
+        -17,
+        -0.5,
+        21
+      ],
+      "size": [
+        634,
+        0.5,
+        1
+      ],
+      "material": "ochre",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — шов фасада",
+      "origin": [
+        -17,
+        -0.5,
+        128
+      ],
+      "size": [
+        634,
+        0.5,
+        1
+      ],
+      "material": "ochre",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — шов фасада",
+      "origin": [
+        -17,
+        -0.5,
+        21
+      ],
+      "size": [
+        1,
+        0.5,
+        108
+      ],
+      "material": "ochre",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Нижний ящик — шов фасада",
+      "origin": [
+        616,
+        -0.5,
+        21
+      ],
+      "size": [
+        1,
+        0.5,
+        108
+      ],
+      "material": "ochre",
+      "group": "BaseDrawer"
+    },
+    {
+      "type": "box",
+      "name": "Верхний шкаф — фасад",
+      "origin": [
+        -17,
+        0,
+        1929
+      ],
+      "size": [
+        634,
+        18,
+        650
+      ],
+      "material": "yellow",
+      "group": "UpperDoor"
+    },
+    {
+      "type": "box",
+      "name": "Верхний шкаф — ручка",
+      "origin": [
+        215,
+        -12,
+        1960
+      ],
+      "size": [
+        170,
+        12,
+        12
+      ],
+      "material": "ochre",
+      "group": "UpperDoor"
+    },
+    {
+      "type": "box",
+      "name": "Верхний шкаф — шов фасада",
+      "origin": [
+        -17,
+        -0.5,
+        1929
+      ],
+      "size": [
+        634,
+        0.5,
+        1
+      ],
+      "material": "ochre",
+      "group": "UpperDoor"
+    },
+    {
+      "type": "box",
+      "name": "Верхний шкаф — шов фасада",
+      "origin": [
+        -17,
+        -0.5,
+        2578
+      ],
+      "size": [
+        634,
+        0.5,
+        1
+      ],
+      "material": "ochre",
+      "group": "UpperDoor"
+    },
+    {
+      "type": "box",
+      "name": "Верхний шкаф — шов фасада",
+      "origin": [
+        -17,
+        -0.5,
+        1929
+      ],
+      "size": [
+        1,
+        0.5,
+        650
+      ],
+      "material": "ochre",
+      "group": "UpperDoor"
+    },
+    {
+      "type": "box",
+      "name": "Верхний шкаф — шов фасада",
+      "origin": [
+        616,
+        -0.5,
+        1929
+      ],
+      "size": [
+        1,
+        0.5,
+        650
+      ],
+      "material": "ochre",
+      "group": "UpperDoor"
+    },
+    {
+      "type": "box",
+      "name": "Условная верхняя петля",
+      "origin": [
+        65,
+        18,
+        2560
+      ],
+      "size": [
+        40,
+        20,
+        20
+      ],
+      "material": "ochre",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Условная верхняя петля",
+      "origin": [
+        495,
+        18,
+        2560
+      ],
+      "size": [
+        40,
+        20,
+        20
+      ],
+      "material": "ochre",
+      "group": "Frame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — горизонтальная планка",
+      "origin": [
+        -38,
+        0,
+        2600
+      ],
+      "size": [
+        676,
+        30,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — горизонтальная планка",
+      "origin": [
+        -38,
+        690,
+        2600
+      ],
+      "size": [
+        676,
+        30,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — боковая планка",
+      "origin": [
+        -38,
+        30,
+        2600
+      ],
+      "size": [
+        30,
+        660,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — боковая планка",
+      "origin": [
+        608,
+        30,
+        2600
+      ],
+      "size": [
+        30,
+        660,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — горизонтальная планка",
+      "origin": [
+        -38,
+        0,
+        2720
+      ],
+      "size": [
+        676,
+        30,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — горизонтальная планка",
+      "origin": [
+        -38,
+        690,
+        2720
+      ],
+      "size": [
+        676,
+        30,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — боковая планка",
+      "origin": [
+        -38,
+        30,
+        2720
+      ],
+      "size": [
+        30,
+        660,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — боковая планка",
+      "origin": [
+        608,
+        30,
+        2720
+      ],
+      "size": [
+        30,
+        660,
+        30
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — вертикальная стойка",
+      "origin": [
+        -38,
+        0,
+        2630
+      ],
+      "size": [
+        30,
+        30,
+        90
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — вертикальная стойка",
+      "origin": [
+        -38,
+        690,
+        2630
+      ],
+      "size": [
+        30,
+        30,
+        90
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — вертикальная стойка",
+      "origin": [
+        608,
+        0,
+        2630
+      ],
+      "size": [
+        30,
+        30,
+        90
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "box",
+      "name": "Рамка — вертикальная стойка",
+      "origin": [
+        608,
+        690,
+        2630
+      ],
+      "size": [
+        30,
+        30,
+        90
+      ],
+      "material": "yellow",
+      "group": "CeilingFrame"
+    },
+    {
+      "type": "rectangle",
+      "name": "Сзади 100 мм — граница подключений",
+      "vertices": [
+        [
+          -20,
+          700,
+          150
+        ],
+        [
+          620,
+          700,
+          150
+        ],
+        [
+          620,
+          700,
+          1888
+        ],
+        [
+          -20,
+          700,
+          1888
+        ]
+      ],
+      "group": "Zones",
+      "material": "red"
+    },
+    {
+      "type": "rectangle",
+      "name": "Слева 20 мм — граница зазора",
+      "vertices": [
+        [
+          -20,
+          0,
+          150
+        ],
+        [
+          -20,
+          600,
+          150
+        ],
+        [
+          -20,
+          600,
+          1888
+        ],
+        [
+          -20,
+          0,
+          1888
+        ]
+      ],
+      "group": "Zones",
+      "material": "red"
+    },
+    {
+      "type": "rectangle",
+      "name": "Справа 20 мм — граница зазора",
+      "vertices": [
+        [
+          620,
+          0,
+          150
+        ],
+        [
+          620,
+          600,
+          150
+        ],
+        [
+          620,
+          600,
+          1888
+        ],
+        [
+          620,
+          0,
+          1888
+        ]
+      ],
+      "group": "Zones",
+      "material": "red"
+    },
+    {
+      "type": "rectangle",
+      "name": "Над стиралкой 20 мм",
+      "vertices": [
+        [
+          0,
+          0,
+          1020
+        ],
+        [
+          600,
+          0,
+          1020
+        ],
+        [
+          600,
+          600,
+          1020
+        ],
+        [
+          0,
+          600,
+          1020
+        ]
+      ],
+      "group": "Zones",
+      "material": "red"
+    },
+    {
+      "type": "rectangle",
+      "name": "Над сушилкой 20 мм",
+      "vertices": [
+        [
+          0,
+          0,
+          1908
+        ],
+        [
+          600,
+          0,
+          1908
+        ],
+        [
+          600,
+          600,
+          1908
+        ],
+        [
+          0,
+          600,
+          1908
+        ]
+      ],
+      "group": "Zones",
+      "material": "red"
+    },
+    {
+      "type": "rectangle",
+      "name": "Спереди 650 мм — проекция открытого верхнего фасада",
+      "vertices": [
+        [
+          -38,
+          -650,
+          0
+        ],
+        [
+          638,
+          -650,
+          0
+        ],
+        [
+          638,
+          0,
+          0
+        ],
+        [
+          -38,
+          0,
+          0
+        ]
+      ],
+      "group": "Access",
+      "material": "red"
+    }
+  ],
+  "groups": {
+    "Frame": "Корпус стойки — 2600 мм",
+    "BaseDrawer": "Нижний ящик в основании 150 мм",
+    "UpperDoor": "Верхний шкаф — фасад открывается вверх",
+    "CeilingFrame": "Монтажная рамка под натяжной потолок — 150 мм",
+    "Zones": "Монтажные зазоры — красные плоскости",
+    "Access": "Зона доступа и выдвижения — красная плоскость"
+  },
+  "zone_opacity": 0.18,
+  "body_dimensions_mm": [
+    676,
+    720,
+    2600
+  ],
+  "panel_thickness_mm": 18,
+  "frame_height_mm": 150,
+  "total_height_mm": 2750,
+  "front_handle_projection_mm": 12,
+  "upper_cabinet_clear_height_mm": 656,
+  "upper_door_hinge_mm": [
+    -17,
+    0,
+    2579
+  ]
+}
