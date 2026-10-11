@@ -30,7 +30,7 @@ FileUtils.mkdir_p(bridge::ROOT)
 folders=bridge.file_roots+[File.realpath(workspace)]
 bridge.atomic_json(File.join(bridge::ROOT,'automation-folders.json'),folders.uniq)
 bridge.start
-puts 'SketchUp MCP 0.2.0 activated: 37 tools. Restart the MCP connection in your AI client to refresh tools.'
+puts 'SketchUp MCP 0.3.0 activated: 41 tools. Restart the MCP connection in your AI client to refresh tools.'
 puts "Automation folder: #{workspace}"
 report_file=File.join(project,'dist','native-smoke-result.json')
 begin
@@ -41,6 +41,7 @@ rescue StandardError => error
   warn "Native verification: #{error.message}. Bridge is activated; report: #{report_file}"
 end
 report[:sketchup_version]=Sketchup.version
+report[:bridge_version]='0.3.0'
 report[:verified_at]=Time.now.utc.iso8601
 FileUtils.mkdir_p(File.dirname(report_file))
 File.write(report_file,JSON.pretty_generate(report))

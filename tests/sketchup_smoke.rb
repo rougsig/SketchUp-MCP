@@ -42,6 +42,38 @@ module LocalSketchUpMCP
       plate=create.call('drain',[{'type'=>'plate_hole','origin'=>[0,0,0],'size'=>[200,200,5],'hole_center'=>[100,100,0],'radius'=>25}])
       assert(plate[:part_count]==1,'circular aperture')
       results << 'circle + drain aperture'
+      round_paths=[]
+      %w[sphere cone].each do |type|
+        args={'key'=>prefix+type,'radius_mm'=>50,'center_mm'=>[1500,0,0],'segments'=>32}
+        args['height_mm']=100 if type=='cone'
+        item=bridge.automation_execute(model,'create_'+type,args)
+        round_paths << [item[:entity][:id]]
+        assert(item[:entity][:local_bounds_mm][:dimensions].all? { |n| (n-100).abs<0.01 },type+' dimensions')
+        entity=model.find_entity_by_persistent_id(item[:entity][:id])
+        leaf=bridge.children(entity).find { |part| bridge.container?(part) }
+        assert(leaf.manifold?,type+' closed solid')
+      end
+      ruby=bridge.automation_execute(model,'eval_ruby',{'code'=>'puts "smoke stdout"; warn "smoke stderr"; {answer: 6 * 7}'})
+      assert(ruby[:result]['answer']==42 && ruby[:stdout].include?('smoke stdout') && ruby[:stderr].include?('smoke stderr'),'inline Ruby result and output')
+      results << 'sphere + cone solids + inline Ruby'
+      workspace=File.expand_path('..',__dir__)
+      export_directory=File.join(workspace,'artifacts','native-smoke','cache')
+      FileUtils.mkdir_p(export_directory)
+      bridge.automation_execute(model,'set_camera',{'paths'=>round_paths})
+      previous_selection=model.selection.to_a
+      %w[dae obj stl png jpg].each do |format|
+        options={'file_path'=>File.join(export_directory,'round-primitives.'+format)}
+        if %w[dae obj stl].include?(format)
+          options['paths']=round_paths
+          options['render_compatible']=true if format=='dae'
+        else
+          options.merge!('width'=>640,'height'=>480)
+        end
+        export=bridge.automation_execute(model,'export_scene',options)
+        assert(export[:bytes]>0,format+' file exported')
+        assert(model.selection.to_a==previous_selection,'selection restored after '+format)
+      end
+      results << 'selected DAE/OBJ/STL + native PNG/JPEG exports'
       cabinet=bridge.automation_execute(model,'create_furniture',{'key'=>prefix+'cabinet','parameters'=>{'width_mm'=>300,'depth_mm'=>720,'height_mm'=>950}})
       updated=bridge.automation_execute(model,'update_furniture',{'path'=>[cabinet[:entity][:id]],'parameters'=>{'width_mm'=>320}})
       assert(JSON.parse(updated[:entity][:parameters])['panel_mm']==18,'panel thickness after width update')
@@ -55,13 +87,12 @@ module LocalSketchUpMCP
       ]})
       assert(variants[:scenes].length==2,'independent scene variants')
       results << 'scenes + visibility variants'
-      workspace=File.expand_path('..',__dir__)
       modules=[['sink','laundry-sink',[0,0,0]],['detergent','detergent-cabinet',[750,0,0]],
                ['tower','laundry-tower',[1088,0,0]],['washer','washing-machine',[1088,0,150]],['dryer','dryer',[1088,0,1038]]]
       row={}
       modules.each do |key,folder,origin|
         item=bridge.automation_execute(model,'build_assembly',{'key'=>prefix+key,
-          'json_path'=>File.join(workspace,'artifacts',folder,'model-primitives.json'),'origin_mm'=>origin})
+          'json_path'=>File.join(workspace,'artifacts',folder,'cache','model-primitives.json'),'origin_mm'=>origin})
         row[key]=[item[:entity][:id]]
       end
       measured=bridge.automation_execute(model,'measure_objects',{'paths'=>%w[sink detergent tower].map { |key| row[key] },'available_dimensions_mm'=>[1750,735,2750]})

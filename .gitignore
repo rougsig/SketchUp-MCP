@@ -1,3 +1,10 @@
 __pycache__/
 *.pyc
 .DS_Store
+.codex/
+models/
+zr/
+artifacts/*/cache/
+artifacts/*/README.txt
+artifacts/*/build_model.py
+artifacts/*/layout.py

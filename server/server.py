@@ -78,6 +78,8 @@ def validate(value, schema, path='arguments'):
         for v in value:
             validate(v, schema['items'], path + '[]')
     elif isinstance(value, str):
+        if len(value) < schema.get('minLength', 0):
+            raise ValueError(path + ': string too short')
         if len(value) > schema.get('maxLength', float('inf')):
             raise ValueError(path + ': string too long')
         if 'pattern' in schema and not re.fullmatch(schema['pattern'], value):
@@ -151,7 +153,7 @@ def handle(message, bridge):
         requested = params.get('protocolVersion')
         reply['result'] = {'protocolVersion': requested if requested in PROTOCOLS else PROTOCOLS[0],
                            'capabilities': {'tools': {}},
-                           'serverInfo': {'name': 'local-sketchup-mcp', 'version': '0.2.0'},
+                           'serverInfo': {'name': 'local-sketchup-mcp', 'version': '0.3.0'},
                            'instructions': 'Work on the active SketchUp model. Lengths are mm. Read current IDs before editing; context coordinates may differ from world coordinates. Edits support SketchUp Undo.'}
     elif method == 'ping':
         reply['result'] = {}

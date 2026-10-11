@@ -1,9 +1,11 @@
 # Native automation. All public lengths are millimeters; instance paths disambiguate shared definitions.
 require 'digest'
+require 'stringio'
+require_relative 'interactions'
 module LocalSketchUpMCP
   module Bridge
     AUTOMATION_READ = %w[get_capabilities find_objects inspect_object measure_objects check_collisions check_motion get_operation_status list_scenes list_tags].freeze
-    AUTOMATION_WRITE = %w[build_assembly create_furniture update_furniture import_component transform_object copy_object set_object_properties delete_objects create_material paint_object set_tags set_camera create_scene activate_scene create_scene_variants add_annotation save_model export_component run_ruby_script batch_edit].freeze
+    AUTOMATION_WRITE = %w[build_assembly create_sphere create_cone create_furniture update_furniture import_component transform_object copy_object set_object_properties delete_objects create_material paint_object set_tags set_camera create_scene activate_scene create_scene_variants add_annotation save_model export_component export_scene eval_ruby run_ruby_script batch_edit].freeze
     ATTRIBUTE = 'LocalSketchUpMCP'.freeze
 
     def file_roots
@@ -42,6 +44,7 @@ module LocalSketchUpMCP
 
     def automation_dispatch(model, tool, args)
       return automation_execute(model,tool,args) if AUTOMATION_READ.include?(tool)
+      raise 'Finish dragging the artifact before automation writes' if @artifact_drag_active
       id=args.fetch('operation_id');path=journal_path(id)
       fingerprint=Digest::SHA256.hexdigest(JSON.generate(canonical({'tool'=>tool,'arguments'=>args})))
       if File.exist?(path)
@@ -55,7 +58,7 @@ module LocalSketchUpMCP
       atomic_json(path,record)
       begin
         @path_remap = {}
-        result = if %w[run_ruby_script save_model export_component].include?(tool)
+        result = if %w[run_ruby_script save_model export_component export_scene].include?(tool) || (tool=='eval_ruby' && args.fetch('transaction','managed')=='script_owned')
           automation_execute(model,tool,args)
         else
           operation(model,tool) { automation_execute(model,tool,args) }
@@ -65,7 +68,7 @@ module LocalSketchUpMCP
         atomic_json(path,record)
         result
       rescue StandardError => error
-        record.merge!('status'=>tool=='run_ruby_script' ? 'failed_possible_partial_changes' : 'failed','error'=>"#{error.class}: #{error.message}",'finished_at'=>Time.now.to_f)
+        record.merge!('status'=>%w[run_ruby_script eval_ruby export_scene].include?(tool) ? 'failed_possible_partial_changes' : 'failed','error'=>"#{error.class}: #{error.message}",'finished_at'=>Time.now.to_f)
         atomic_json(path,record)
         raise
       ensure
@@ -278,6 +281,21 @@ module LocalSketchUpMCP
       group=entities.add_group;group.name=shape.fetch('name',shape.fetch('type'))
       type=shape.fetch('type');group.set_attribute(ATTRIBUTE,'primitive',type)
       case type
+      when 'sphere','cone'
+        vertices,faces=round_primitive_mesh(shape)
+        faces.each do |indices|
+          face=group.entities.add_face(indices.map { |i| vector(vertices[i]) })
+          raise "Could not create #{type} face" unless face
+          # SketchUp can choose the opposite winding when closing a solid.
+          a,b,c=indices.first(3).map { |i| Geom::Point3d.new(vector(vertices[i])) }
+          expected=(b-a).cross(c-a)
+          face.reverse! if face.normal.dot(expected)<0
+        end
+        group.entities.grep(Sketchup::Edge).each do |edge|
+          next unless edge.faces.length==2
+          next if type=='cone' && edge.faces.any? { |face| face.vertices.length>3 }
+          edge.soft=true;edge.smooth=true
+        end
       when 'box','plate_hole'
         x,y,z=vector(shape.fetch('origin'));w,d,h=vector(shape.fetch('size'),true)
         face=group.entities.add_face([x,y,z],[x+w,y,z],[x+w,y+d,z],[x,y+d,z])
@@ -315,6 +333,43 @@ module LocalSketchUpMCP
       group
     end
 
+    # Closed outward-wound meshes, in public millimeters. Pole vertices are unique.
+    def round_primitive_mesh(shape)
+      type=shape.fetch('type');raise 'Expected sphere or cone' unless %w[sphere cone].include?(type)
+      center=shape.fetch('center',[0,0,0]);vector(center)
+      radius=shape.fetch('radius');positive_number(radius,'radius')
+      segments=shape.fetch('segments',32)
+      raise 'Unsupported segments' unless [12,16,24,32,48,64,96,128].include?(segments)
+      if type=='sphere'
+        rings=segments/2;vertices=[[0,0,-radius]];faces=[]
+        (1...rings).each do |j|
+          latitude=-Math::PI/2+Math::PI*j/rings
+          segments.times do |i|
+            angle=2*Math::PI*i/segments
+            vertices << [radius*Math.cos(latitude)*Math.cos(angle),radius*Math.cos(latitude)*Math.sin(angle),radius*Math.sin(latitude)]
+          end
+        end
+        north=vertices.length;vertices << [0,0,radius]
+        segments.times do |i|
+          next_i=(i+1)%segments
+          faces << [0,1+next_i,1+i]
+          (0...rings-2).each do |j|
+            a=1+j*segments+i;b=1+j*segments+next_i;c=a+segments;d=b+segments
+            faces << [a,b,d];faces << [a,d,c]
+          end
+          faces << [1+(rings-2)*segments+i,1+(rings-2)*segments+next_i,north]
+        end
+      else
+        height=shape.fetch('length',shape['depth']);positive_number(height,'height')
+        axis=shape.fetch('axis','Z');raise 'Invalid cone axis' unless %w[X Y Z].include?(axis)
+        vertices=segments.times.map { |i| a=2*Math::PI*i/segments;[radius*Math.cos(a),radius*Math.sin(a),0] }
+        vertices << [0,0,height]
+        faces=[(0...segments).to_a.reverse]+segments.times.map { |i| [i,(i+1)%segments,segments] }
+        vertices=vertices.map { |x,y,z| axis=='X' ? [z,x,y] : axis=='Y' ? [y,z,x] : [x,y,z] }
+      end
+      [vertices.map { |p| p.zip(center).map { |a,b| a+b } },faces]
+    end
+
     def positive_number(n,name)
       raise "#{name} must be positive and finite" unless n.is_a?(Numeric) && n.finite? && n>0
       n
@@ -343,6 +398,21 @@ module LocalSketchUpMCP
       end
     end
 
+    # COLLADA supplies one material per surface. SketchUp's DAE importer leaves
+    # reverse sides unpainted, including single clearance/reference planes.
+    def paint_imported_back_faces(definition,seen={})
+      return if seen[definition.object_id]
+      seen[definition.object_id]=true
+      definition.entities.each do |entity|
+        if entity.is_a?(Sketchup::Face)
+          entity.back_material=entity.material if entity.material && !entity.back_material
+        elsif container?(entity)
+          nested=entity.is_a?(Sketchup::Group) ? entity.entities.parent : entity.definition
+          paint_imported_back_faces(nested,seen)
+        end
+      end
+    end
+
     def normalize_assembly(args)
       raise 'Specify assembly or json_path, not both' if args['assembly'] && args['json_path']
       data=args['assembly'] || JSON.parse(File.read(automation_file(args.fetch('json_path'))))
@@ -351,7 +421,17 @@ module LocalSketchUpMCP
         anchors={}
         (data.fetch('drawers',[])+data.fetch('doors',[])).each { |p| anchors[p.fetch('group')]=p['anchor_mm'] || p['hinge_mm'] }
         anchors['UpperDoor']=data['upper_door_hinge_mm'] if data['upper_door_hinge_mm']
-        data['groups']=data['groups'].map { |key,name| { 'key'=>key,'name'=>name,'component'=>true,'anchor_mm'=>anchors.fetch(key,[0,0,0]),'role'=>key } }
+        data['groups']=data['groups'].map do |key,name|
+          door=data.fetch('doors',[]).find { |entry| entry['group']==key }
+          drawer=data.fetch('drawers',[]).find { |entry| entry['group']==key }
+          motion=if door
+            {'rotation_axis'=>door.fetch('rotation_axis',[0,0,1]),'rotation_degrees'=>door.fetch('angle_degrees',-100)}
+          elsif drawer
+            {'translation_mm'=>[0,-drawer.fetch('travel_mm',400),0]}
+          end
+          motion=data.fetch('motions',{}).fetch(key,motion)
+          { 'key'=>key,'name'=>name,'component'=>true,'anchor_mm'=>anchors.fetch(key,[0,0,0]),'role'=>key,'motion'=>motion }
+        end
       end
       if data['materials'].is_a?(Hash)
         data['materials']=data['materials'].map { |key,rgb| { 'key'=>key,'name'=>key=='yellow' ? 'My Yellow' : 'MCP '+key,'rgb'=>rgb,'opacity'=>key=='red' ? data.fetch('zone_opacity',0.18) : 1 } }
@@ -395,6 +475,11 @@ module LocalSketchUpMCP
         end
         child.set_attribute(ATTRIBUTE,'part_key',spec['key']);child.set_attribute(ATTRIBUTE,'role',spec.fetch('role',spec['key']))
         child.set_attribute(ATTRIBUTE,'closed_transform',child.transformation.to_a)
+        if spec['motion']
+          child.set_attribute(ATTRIBUTE,'motion',JSON.generate(spec['motion']))
+          child.set_attribute(ATTRIBUTE,'open',false)
+          child.set_attribute(ATTRIBUTE,'motion_fraction',0.0)
+        end
       end
       component=group.to_component;component.name=data.fetch('name',key);component.definition.name=data.fetch('name',key)
       component.set_attribute(ATTRIBUTE,'key',key);component.set_attribute(ATTRIBUTE,'role','assembly')
@@ -509,7 +594,9 @@ module LocalSketchUpMCP
     def automation_execute(model,tool,args)
       case tool
       when 'get_capabilities'
-        {version:'0.2.0',automation_tools:AUTOMATION_READ+AUTOMATION_WRITE,automation_folders:file_roots,
+        {version:'0.3.0',automation_tools:AUTOMATION_READ+AUTOMATION_WRITE,automation_folders:file_roots,
+          primitive_types:%w[box rectangle cylinder ring tube plate_hole circle sphere cone],
+          export_formats:%w[skp obj dae stl png jpg jpeg],
           session:@session,model_id:model.object_id.to_s,context:context(model),
           collision_methods:['exact SAT on verified box leaves','conservative bounds on other geometry'],
           scene_transforms:'Use create_scene_variants; ordinary scenes do not store object transformations'}
@@ -573,6 +660,14 @@ module LocalSketchUpMCP
         {samples_checked:steps,collisions:samples,clear_at_samples:samples.empty?,continuous_motion_verified:false,model_changed:false}
       when 'build_assembly'
         build_native(model,args)
+      when 'create_sphere','create_cone'
+        type=tool=='create_sphere' ? 'sphere' : 'cone'
+        shape={'type'=>type,'center'=>[0,0,0],'radius'=>args.fetch('radius_mm'),'segments'=>args.fetch('segments',32)}
+        if type=='cone'
+          shape.merge!('length'=>args.fetch('height_mm'),'axis'=>args.fetch('axis','Z'))
+        end
+        build_native(model,{'key'=>args.fetch('key'),'replace'=>args.fetch('replace',false),
+          'origin_mm'=>args.fetch('center_mm',[0,0,0]),'assembly'=>{'name'=>args.fetch('name',type),'shapes'=>[shape]}})
       when 'create_furniture','update_furniture'
         if tool=='update_furniture'
           entity,_,_,path=writable_path(model,args.fetch('path'))
@@ -596,10 +691,11 @@ module LocalSketchUpMCP
         if suffix=='.skp'
           definition=model.definitions.load(file);raise 'SKP load failed' unless definition
         else
-          before=model.entities.to_a;raise 'DAE import failed' unless model.import(file,false)
-          imported=model.entities.to_a-before;raise 'Importer created no entities' if imported.empty?
-          group=model.entities.add_group(imported);definition=group.to_component.definition
-          model.entities.erase_entities(definition.instances.to_a)
+          # Model#import activates interactive placement for DAE. Import the
+          # definition directly so the bridge owns instance placement.
+          definition=model.definitions.import(file)
+          raise 'DAE import failed or created empty geometry' unless definition && definition.entities.length>0
+          paint_imported_back_faces(definition)
         end
         placement=old ? old.transformation : Geom::Transformation.translation(vector(args.fetch('origin_mm',[0,0,0])))
         placement=placement*Geom::Transformation.rotation([0,0,0],[0,0,1],args.fetch('rotation_degrees',0)*Math::PI/180) if args.key?('rotation_degrees')
@@ -686,6 +782,31 @@ module LocalSketchUpMCP
         definition=entity.is_a?(Sketchup::Group) ? entity.entities.parent : entity.definition
         raise 'Component save failed' unless definition.save_as(file)
         {file_path:file,bytes:File.size(file)}
+      when 'export_scene'
+        export_scene(model,args)
+      when 'eval_ruby'
+        raise 'Exit component editing before executing Ruby' if model.active_path
+        code=args.fetch('code');raise 'Ruby code must contain 1..100000 characters' unless code.is_a?(String) && code.length.between?(1,100000)
+        mode=args.fetch('transaction','managed');raise 'Invalid Ruby transaction mode' unless %w[managed script_owned].include?(mode)
+        stdout=StringIO.new;stderr=StringIO.new
+        old_stdout=$stdout;old_stderr=$stderr
+        begin
+          $stdout=stdout;$stderr=stderr
+          value=TOPLEVEL_BINDING.dup.eval(code,'(SketchUp MCP eval_ruby)',1)
+        rescue SyntaxError => error
+          raise "Ruby syntax error: #{error.message}\nstdout: #{stdout.string}\nstderr: #{stderr.string}"
+        rescue StandardError => error
+          raise "#{error.class}: #{error.message}\nstdout: #{stdout.string}\nstderr: #{stderr.string}"
+        ensure
+          $stdout=old_stdout;$stderr=old_stderr
+        end
+        # Preserve JSON data; SketchUp objects and other non-JSON values use Ruby inspection.
+        result=if value.nil? || value==true || value==false || value.is_a?(Numeric) || value.is_a?(String) || value.is_a?(Array) || value.is_a?(Hash)
+          begin JSON.parse(JSON.generate(value));rescue JSON::GeneratorError,TypeError,SystemStackError;value.inspect;end
+        else value.inspect
+        end
+        {result:result,result_type:value.class.name,stdout:stdout.string,stderr:stderr.string,
+          transaction:mode,code_sha256:Digest::SHA256.hexdigest(code)}
       when 'run_ruby_script'
         raise 'Exit component editing before executing a generator' if model.active_path
         file=automation_file(args.fetch('file_path'));raise 'Script must be .rb' unless File.extname(file).downcase=='.rb'
@@ -701,6 +822,58 @@ module LocalSketchUpMCP
         {results:commands.map { |command| automation_execute(model,command.fetch('tool'),command.fetch('arguments')) }}
       else raise "Unknown automation tool #{tool}"
       end
+    end
+
+    def export_scene(model,args)
+      file=automation_file(args.fetch('file_path'),true)
+      format=File.extname(file).downcase.delete_prefix('.')
+      images=%w[png jpg jpeg]
+      raise 'Export supports SKP, OBJ, DAE, STL, PNG and JPEG' unless (%w[skp obj dae stl]+images).include?(format)
+      image_keys=%w[width height transparent compression]
+      raise 'Image options only apply to PNG/JPEG exports' if !images.include?(format) && image_keys.any? { |key| args.key?(key) }
+      raise 'Transparent background requires PNG' if format!='png' && args.fetch('transparent',false)
+      raise 'render_compatible only applies to DAE' if args.key?('render_compatible') && format!='dae'
+      paths=args['paths'];selected=nil
+      if paths
+        raise 'Object selection export supports OBJ, DAE and STL; use export_component for SKP' unless %w[obj dae stl].include?(format)
+        raise 'Exit component editing before selection export' if model.active_path
+        raise 'Export paths must be nonempty root paths; export nested components as SKP using export_component' unless paths.is_a?(Array) && !paths.empty? && paths.all? { |path| path.is_a?(Array) && path.length==1 }
+        selected=paths.map { |path| resolve_path(model,path).first }.uniq
+      end
+      if images.include?(format)
+        width=bounded_integer(args.fetch('width',1920),64,16000)
+        height=bounded_integer(args.fetch('height',1080),64,16000)
+        compression=args.fetch('compression',0.95)
+        raise 'Compression must be 0..1' unless compression.is_a?(Numeric) && compression.finite? && compression.between?(0,1)
+        model.active_view.refresh
+        ok=model.active_view.write_image(filename:file,width:width,height:height,antialias:true,
+          transparent:args.fetch('transparent',false),compression:compression)
+      elsif format=='skp'
+        ok=model.save_copy(file)
+      else
+        options={show_summary:false,selectionset_only:!selected.nil?}
+        if format=='stl'
+          options.merge!(units:'mm',format:'binary',swap_yz:false)
+        else
+          options.merge!(triangulated_faces:true,doublesided_faces:false,edges:false,texture_maps:true)
+          options.merge!(units:'mm',swap_yz:false) if format=='obj'
+          options.merge!(preserve_instancing:true,hidden_geometry:false) if format=='dae'
+          options.merge!(preserve_instancing:false,texture_maps:false) if args.fetch('render_compatible',false)
+        end
+        if selected
+          previous=model.selection.to_a.dup
+          begin
+            model.selection.clear;model.selection.add(selected)
+            ok=model.export(file,options)
+          ensure
+            model.selection.clear;model.selection.add(previous.select(&:valid?))
+          end
+        else
+          ok=model.export(file,options)
+        end
+      end
+      raise "#{format.upcase} export failed; check SketchUp exporter availability" unless ok && File.file?(file) && File.size(file)>0
+      {file_path:file,format:format,bytes:File.size(file),paths:paths,render_compatible:args.fetch('render_compatible',false)}
     end
 
     def create_variants(model,args)

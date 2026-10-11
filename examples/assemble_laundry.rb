@@ -18,7 +18,7 @@ started=true
 modules.each do |key,folder,offset|
   location=origin.zip(offset).map { |a,b| a+b }
   result=bridge.automation_execute(model,'build_assembly',{'key'=>key_prefix+key,'replace'=>true,
-    'json_path'=>File.join(workspace,'artifacts',folder,'model-primitives.json'),'origin_mm'=>location})
+    'json_path'=>File.join(workspace,'artifacts',folder,'cache','model-primitives.json'),'origin_mm'=>location})
   results[key]=[result[:entity][:id]]
 end
 measurement=bridge.automation_execute(model,'measure_objects',{'paths'=>%w[sink detergent tower].map { |name| results[name] },'available_dimensions_mm'=>[1750,735,2750]})

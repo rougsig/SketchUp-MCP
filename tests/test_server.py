@@ -27,7 +27,7 @@ class ProtocolTests(unittest.TestCase):
         result = self.call('initialize', {'protocolVersion': '2024-11-05'})['result']
         self.assertEqual(result['protocolVersion'], '2024-11-05')
         tools = self.call('tools/list')['result']['tools']
-        self.assertEqual(len(tools), 37)
+        self.assertEqual(len(tools), 41)
         self.assertTrue(next(t for t in tools if t['name'] == 'get_model')['annotations']['readOnlyHint'])
         self.assertFalse(next(t for t in tools if t['name'] == 'create_box')['annotations']['readOnlyHint'])
 
@@ -55,6 +55,32 @@ class ProtocolTests(unittest.TestCase):
         result = self.call('tools/call', {'name': 'build_assembly', 'arguments': {
             'json_path': '/tmp/model-primitives.json', 'key': 'laundry-sink', 'replace': True, 'operation_id': 'sink-v1'}})
         self.assertNotIn('isError', result['result'])
+
+    def test_new_primitive_export_and_ruby_arguments(self):
+        for name, arguments in (
+            ('create_sphere', {'key':'sphere','radius_mm':100,'center_mm':[10,20,30],'operation_id':'sphere-1'}),
+            ('create_cone', {'key':'cone','radius_mm':100,'height_mm':200,'axis':'X','operation_id':'cone-1'}),
+            ('export_scene', {'file_path':'/tmp/model.stl','operation_id':'export-1'}),
+            ('export_scene', {'file_path':'/tmp/model.dae','paths':[[123]],'render_compatible':True,'operation_id':'export-selected'}),
+            ('eval_ruby', {'code':'[1,2,3]','transaction':'managed','operation_id':'ruby-1'}),
+        ):
+            self.assertNotIn('isError', self.call('tools/call', {'name':name,'arguments':arguments})['result'])
+        for name, arguments in (
+            ('create_sphere', {'key':'sphere','radius_mm':0,'operation_id':'bad'}),
+            ('create_cone', {'key':'cone','radius_mm':1,'height_mm':-1,'operation_id':'bad'}),
+            ('create_cone', {'key':'cone','radius_mm':1,'height_mm':1,'segments':13,'operation_id':'bad'}),
+            ('eval_ruby', {'code':'','operation_id':'bad'}),
+            ('eval_ruby', {'code':'puts 1'}),
+            ('eval_ruby', {'code':'a'*100001,'operation_id':'bad'}),
+            ('eval_ruby', {'code':'1','transaction':'other','operation_id':'bad'}),
+            ('export_scene', {'file_path':'/tmp/view.png','width':16001,'operation_id':'bad'}),
+        ):
+            self.assertTrue(self.call('tools/call', {'name':name,'arguments':arguments})['result']['isError'])
+        for kind in ('sphere','cone'):
+            result=self.call('tools/call', {'name':'build_assembly','arguments':{
+                'key':kind,'operation_id':kind+'-assembly','assembly':{
+                    'shapes':[{'type':kind,'radius':100,'length':200,'segments':32}]}}})
+            self.assertNotIn('isError',result['result'])
 
     def test_notifications_and_invalid_requests(self):
         self.assertIsNone(server.handle({'jsonrpc': '2.0', 'method': 'notifications/initialized'}, FakeBridge()))

@@ -22,7 +22,10 @@ module Geom
   end
   class Transformation
     attr_reader :matrix
-    def initialize(matrix=Matrix.identity(4));@matrix=matrix;end
+    def initialize(matrix=Matrix.identity(4))
+      @matrix=matrix.is_a?(Array) ? Matrix.rows(matrix.each_slice(4).to_a).transpose : matrix
+    end
+    def to_a;matrix.transpose.to_a.flatten;end
     def *(other);Transformation.new(matrix*other.matrix);end
     def inverse;Transformation.new(matrix.inverse);end
     def origin;Point3d.new(matrix[0,3],matrix[1,3],matrix[2,3]);end
@@ -77,12 +80,74 @@ class AutomationTests < Minitest::Test
 
   def test_current_project_primitive_files_normalize
     project=File.expand_path('..',__dir__)
-    Dir.glob(File.join(project,'artifacts/*/model-primitives.json')).each do |file|
+    Dir.glob(File.join(project,'artifacts/*/cache/model-primitives.json')).each do |file|
       data=Bridge.normalize_assembly({'json_path'=>file})
       keys=data['groups'].map { |group| group['key'] }+['Root']
       assert data['shapes'].all? { |shape| keys.include?(shape.fetch('group','Root')) },file
       assert data['materials'].all? { |material| material['rgb'].length==3 },file
     end
+  end
+
+  def test_artifact_motion_metadata_includes_hatches_drawers_and_doors
+    project=File.expand_path('..',__dir__)
+    expected={'washing-machine'=>1,'dryer'=>1,'laundry-tower'=>2,'laundry-sink'=>2,'detergent-cabinet'=>5}
+    expected.each do |folder,count|
+      file=File.join(project,'artifacts',folder,'cache','model-primitives.json')
+      next unless File.exist?(file)
+      data=Bridge.normalize_assembly({'json_path'=>file})
+      moving=data['groups'].select { |group| group['motion'] }
+      assert_equal count,moving.length,folder
+      assert moving.all? { |group| group['anchor_mm'].length==3 },folder
+    end
+  end
+
+  def motion_entity(motion,closed)
+    entity=Struct.new(:transformation,:attributes).new(closed,{
+      'motion'=>JSON.generate(motion),'closed_transform'=>closed.to_a,'open'=>false})
+    def entity.get_attribute(_dictionary,key,default=nil);attributes.fetch(key,default);end
+    def entity.set_attribute(_dictionary,key,value);attributes[key]=value;end
+    entity
+  end
+
+  def test_partial_drawer_position_limits_and_repeated_drag_without_drift
+    closed=Geom::Transformation.translation([10,20,30])*Geom::Transformation.rotation([0,0,0],[0,0,1],Math::PI/4)
+    entity=motion_entity({'translation_mm'=>[0,-400,0]},closed)
+    [-1,0,0.3425,0.75,1,2].each do |requested|
+      expected=[[requested,0].max,1].min
+      Bridge.set_artifact_fraction(entity,requested)
+      assert_in_delta expected,Bridge.artifact_fraction(entity),1e-10
+      offset=(closed.inverse*entity.transformation).origin.to_a
+      assert_in_delta -400*expected/25.4,offset[1],1e-10
+      assert_in_delta 0,offset[0],1e-10
+      assert_in_delta 0,offset[2],1e-10
+    end
+    100.times { |i| Bridge.set_artifact_fraction(entity,(i%17)/16.0) }
+    Bridge.set_artifact_fraction(entity,0)
+    assert_equal closed.to_a,entity.transformation.to_a
+    # An existing component moved outside this tool is read from its actual transform.
+    entity.transformation=closed*Geom::Transformation.translation([0,-137/25.4,0])
+    assert_in_delta 137/400.0,Bridge.artifact_fraction(entity),1e-10
+  end
+
+  def test_partial_hinge_angle_and_exact_closed_position
+    closed=Geom::Transformation.translation([4,5,6])
+    entity=motion_entity({'rotation_axis'=>[0,0,1],'rotation_degrees'=>-100},closed)
+    [0,0.1,0.37,0.5,1].each do |fraction|
+      Bridge.set_artifact_fraction(entity,fraction)
+      assert_in_delta fraction,Bridge.artifact_fraction(entity),1e-10
+      assert_equal closed.origin.to_a,entity.transformation.origin.to_a
+    end
+    Bridge.set_artifact_fraction(entity,0)
+    assert_equal closed.to_a,entity.transformation.to_a
+    assert_raises(RuntimeError) { Bridge.set_artifact_fraction(entity,Float::NAN) }
+  end
+
+  def test_automation_writes_are_rejected_during_native_drag
+    Bridge.instance_variable_set(:@artifact_drag_active,true)
+    assert_raises(RuntimeError) { Bridge.automation_dispatch(Sketchup.active_model,'eval_ruby',{'code'=>'nil','operation_id'=>'drag-conflict'}) }
+    assert_raises(RuntimeError) { Bridge.dispatch(Sketchup.active_model,'create_box',{'dimensions_mm'=>[1,1,1]}) }
+  ensure
+    Bridge.instance_variable_set(:@artifact_drag_active,false)
   end
 
   def test_file_guard_rejects_symlink_escape_and_unconfigured_files
@@ -167,6 +232,150 @@ class AutomationTests < Minitest::Test
       error=assert_raises(RuntimeError) { Bridge.automation_dispatch(model,'transform_object',args) }
       assert_match(/running or outcome is unknown/,error.message)
       assert_empty model.events
+    end
+  end
+
+  def test_round_primitives_are_closed_outward_and_keep_millimeter_bounds
+    %w[sphere cone].each do |type|
+      %w[X Y Z].each do |axis|
+        vertices,faces=Bridge.round_primitive_mesh({'type'=>type,'center'=>[10,20,30],'radius'=>100,'length'=>200,'axis'=>axis,'segments'=>32})
+        edges=Hash.new { |h,k| h[k]=[] }
+        volume=0.0
+        faces.each do |face|
+          face.each_with_index { |a,i| b=face[(i+1)%face.length];edges[[a,b].sort] << [a,b] }
+          (1...face.length-1).each do |i|
+            a,b,c=[face[0],face[i],face[i+1]].map { |j| Vector[*vertices[j]] }
+            cross=(b-a).cross(c-a)
+            assert_operator cross.magnitude,:>,1e-8
+            volume+=a.dot(b.cross(c))/6
+          end
+        end
+        assert edges.values.all? { |pair| pair.length==2 && pair[0]==pair[1].reverse },"#{type}: watertight winding"
+        assert_operator volume,:>,0
+        expected=type=='sphere' ? 4*Math::PI*100**3/3 : Math::PI*100**2*200/3
+        assert_in_delta expected,volume,expected*0.03
+        dims=3.times.map { |i| vertices.map { |p| p[i] }.max-vertices.map { |p| p[i] }.min }
+        dims.each { |dimension| assert_in_delta 200,dimension,1e-7 }
+        if type=='sphere'
+          vertices.each { |p| assert_in_delta 100,Math.sqrt(p.zip([10,20,30]).sum { |a,b| (a-b)**2 }),1e-7 }
+        else
+          i=%w[X Y Z].index(axis)
+          assert_in_delta [10,20,30][i]+200,vertices[-1][i],1e-7
+        end
+      end
+    end
+    assert_raises(RuntimeError) { Bridge.round_primitive_mesh({'type'=>'sphere','radius'=>0}) }
+    assert_raises(RuntimeError) { Bridge.round_primitive_mesh({'type'=>'cone','radius'=>10,'length'=>0}) }
+    assert_raises(RuntimeError) { Bridge.round_primitive_mesh({'type'=>'sphere','radius'=>10,'segments'=>13}) }
+  end
+
+  def test_eval_ruby_preserves_json_result_and_replays_without_execution
+    model=Sketchup.active_model
+    id='eval-'+SecureRandom.hex(8)
+    args={'code'=>'$sketchup_mcp_eval_count = ($sketchup_mcp_eval_count || 0) + 1; {count: $sketchup_mcp_eval_count, values: [1, true, nil]}','operation_id'=>id}
+    first=Bridge.automation_dispatch(model,'eval_ruby',args)
+    second=Bridge.automation_dispatch(model,'eval_ruby',args)
+    assert_equal({'count'=>1,'values'=>[1,true,nil]},first[:result])
+    assert_equal true,second['replayed']
+    assert_equal 1,$sketchup_mcp_eval_count
+    assert_equal [:start,:commit],model.events
+    assert_equal 'managed',first[:transaction]
+  ensure
+    $sketchup_mcp_eval_count=nil
+  end
+
+  def test_eval_ruby_failure_and_script_owned_transaction
+    model=Sketchup.active_model
+    args={'code'=>'def broken(','operation_id'=>'syntax-'+SecureRandom.hex(8)}
+    assert_raises(RuntimeError) { Bridge.automation_dispatch(model,'eval_ruby',args) }
+    assert_equal [:start,:abort],model.events
+    assert_equal 'failed_possible_partial_changes',Bridge.operation_status(args['operation_id'])['status']
+    refute Bridge.operation_status(args['operation_id']).key?('code')
+    owned=ModelStub.new
+    result=Bridge.automation_dispatch(owned,'eval_ruby',{'code'=>'21 * 2','transaction'=>'script_owned','operation_id'=>'owned-'+SecureRandom.hex(8)})
+    assert_equal 42,result[:result]
+    assert_empty owned.events
+    assert_equal 'script_owned',result[:transaction]
+  end
+
+  def test_eval_ruby_captures_output_and_restores_streams_after_errors
+    before_stdout=$stdout;before_stderr=$stderr
+    result=Bridge.automation_execute(Sketchup.active_model,'eval_ruby',{'code'=>'puts "hello"; warn "notice"; 42'})
+    assert_equal "hello\n",result[:stdout]
+    assert_equal "notice\n",result[:stderr]
+    assert_equal 42,result[:result]
+    error=assert_raises(RuntimeError) { Bridge.automation_execute(Sketchup.active_model,'eval_ruby',{'code'=>'puts "before error"; raise "bad"'}) }
+    assert_match(/before error/,error.message)
+    assert_same before_stdout,$stdout
+    assert_same before_stderr,$stderr
+  end
+
+  def test_selected_exports_restore_selection_even_when_exporter_raises
+    model=ModelStub.new
+    entity=Struct.new(:id) { def valid?;true;end }.new(123)
+    old=Struct.new(:id) { def valid?;true;end }.new(456)
+    selection=[old]
+    selection.define_singleton_method(:add) { |items| concat(items) }
+    model.define_singleton_method(:selection) { selection }
+    calls=[]
+    model.define_singleton_method(:export) { |file,options| calls << [selection.dup,options];File.write(file,'mesh');true }
+    Dir.mktmpdir do |directory|
+      Bridge.stub(:file_roots,[directory]) do
+        Bridge.stub(:resolve_path,lambda { |*_| [entity] }) do
+          args={'file_path'=>File.join(directory,'selected.dae'),'paths'=>[[123]],'render_compatible'=>true}
+          Bridge.export_scene(model,args)
+          assert_equal [old],selection
+          assert_equal [entity],calls[0][0]
+          assert calls[0][1][:selectionset_only]
+          refute calls[0][1][:preserve_instancing]
+          refute calls[0][1][:texture_maps]
+          model.define_singleton_method(:export) { |*_| raise 'exporter failed' }
+          assert_raises(RuntimeError) { Bridge.export_scene(model,args) }
+          assert_equal [old],selection
+          assert_raises(RuntimeError) { Bridge.export_scene(model,args.merge('paths'=>[[123,456]])) }
+          assert_raises(RuntimeError) { Bridge.export_scene(model,args.merge('file_path'=>File.join(directory,'bad.png'))) }
+          assert_empty model.events
+        end
+      end
+    end
+  end
+
+  def test_export_formats_use_native_options_and_do_not_save_active_model
+    model=ModelStub.new;calls=[]
+    model.define_singleton_method(:export) { |file,options| calls << [:export,options];File.write(file,'mesh');true }
+    model.define_singleton_method(:save_copy) { |file| calls << [:copy];File.write(file,'skp');true }
+    view=Object.new
+    view.define_singleton_method(:refresh) { }
+    view.define_singleton_method(:write_image) { |options| calls << [:image,options];File.write(options[:filename],'image');true }
+    model.define_singleton_method(:active_view) { view }
+    Dir.mktmpdir do |directory|
+      Bridge.stub(:file_roots,[directory]) do
+        %w[obj dae stl png jpg skp].each do |extension|
+          file=File.join(directory,"export.#{extension}")
+          args={'file_path'=>file,'operation_id'=>'export-'+SecureRandom.hex(8)}
+          args.merge!('width'=>640,'height'=>480) if %w[png jpg].include?(extension)
+          result=Bridge.automation_dispatch(model,'export_scene',args)
+          assert_equal extension,result[:format]
+          assert_operator result[:bytes],:>,0
+          assert_empty model.events
+          if %w[obj stl].include?(extension)
+            assert_equal 'mm',calls.last[1][:units]
+            refute calls.last[1][:show_summary]
+          elsif extension=='dae'
+            assert calls.last[1][:preserve_instancing]
+          elsif %w[png jpg].include?(extension)
+            assert_equal 640,calls.last[1][:width]
+            assert calls.last[1][:antialias]
+          else
+            assert_equal [:copy],calls.last
+          end
+        end
+        assert_raises(RuntimeError) { Bridge.export_scene(model,{'file_path'=>File.join(directory,'bad.jpg'),'transparent'=>true}) }
+        assert_raises(RuntimeError) { Bridge.export_scene(model,{'file_path'=>File.join(directory,'bad.stl'),'width'=>640}) }
+        assert_raises(RuntimeError) { Bridge.export_scene(model,{'file_path'=>File.join(directory,'bad.xyz')}) }
+        model.define_singleton_method(:export) { |*_args| false }
+        assert_raises(RuntimeError) { Bridge.export_scene(model,{'file_path'=>File.join(directory,'failed.dae')}) }
+      end
     end
   end
 end

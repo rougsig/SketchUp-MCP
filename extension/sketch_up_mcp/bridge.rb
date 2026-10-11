@@ -28,7 +28,7 @@ module LocalSketchUpMCP
       atomic_json(File.join(ROOT, 'status.json'), {
         running: running, session: @session, updated_at: Time.now.to_f,
         model_id: model ? model.object_id.to_s : nil, context: model ? context(model) : [],
-        bridge_version: '0.2.0', automation_tools: AUTOMATION_READ + AUTOMATION_WRITE
+        bridge_version: '0.3.0', automation_tools: AUTOMATION_READ + AUTOMATION_WRITE
       })
     end
 
@@ -184,6 +184,7 @@ module LocalSketchUpMCP
     end
 
     def dispatch(model, tool, args)
+      raise 'Finish dragging the artifact before automation writes' if @artifact_drag_active && WRITE_TOOLS.include?(tool)
       return automation_dispatch(model, tool, args) if (AUTOMATION_READ + AUTOMATION_WRITE).include?(tool)
       raise 'Unknown tool' unless (READ_TOOLS + WRITE_TOOLS).include?(tool)
       case tool
